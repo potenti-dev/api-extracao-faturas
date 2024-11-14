@@ -48,8 +48,8 @@ Este projeto consiste em uma API desenvolvida em Python usando Flask para extrai
 GET http://127.0.0.1:8080/api/extract?url=https://exemplo.com/fatura.pdf
 
 3. **Exemplo de resposta**:
-   ```json
-   {
+```json
+{
   "status": 200,
   "message": "Dados extraídos com sucesso.",
   "data": {
@@ -66,7 +66,11 @@ GET http://127.0.0.1:8080/api/extract?url=https://exemplo.com/fatura.pdf
         "quantidade": 100.0,
         "valor": 300.0
       },
-      ...
+      {
+        "item_fatura": "Outro Item",
+        "quantidade": 50.0,
+        "valor": 150.0
+      }
     ],
     "encargos": [
       {
@@ -78,9 +82,3 @@ GET http://127.0.0.1:8080/api/extract?url=https://exemplo.com/fatura.pdf
   }
 }
 ```
-
-
-
-
-
-
