@@ -113,7 +113,6 @@ class APILeitorFaturas:
         return self._pdf
 
     def extrair_documento(self):
-        somar_itens_fatura = False
         tipo_fatura = None
         with pdfplumber.open(self._pdf) as pdf:
             pagina = pdf.pages[0]
@@ -142,10 +141,10 @@ class APILeitorFaturas:
             if 'LEGENDA' in modelo:
                 result_itens_fatura = self.busca_itens_fatura('CELESC1')
             else:
+                result_itens_fatura = self.busca_itens_fatura('CELESC2_3')
                 if len(pdf.pages) > 2:
                     somar_itens_fatura = True
                     result_itens_fatura = self.busca_itens_fatura('CELESC2_3', somar_itens_fatura)
-                result_itens_fatura = self.busca_itens_fatura('CELESC2_3')
 
         data_values = {}
         data_values = {
@@ -428,9 +427,9 @@ class APILeitorFaturas:
 
     def renomear_lista_celesc(self, list):
         lista_renomeada = [
-            FATURA_DICT[1] if item == 'Consumo Ponta TUSD' else
+            FATURA_DICT[1] if item == 'Consumo Ponta TUSD' or item == 'Consumo TUSD' else
             FATURA_DICT[2] if item == 'Consumo Fora Ponta TUSD' else
-            FATURA_DICT[6] if item == 'Consumo Ponta TE' else
+            FATURA_DICT[6] if item == 'Consumo Ponta TE' or item == 'Consumo TE' else
             FATURA_DICT[7] if item == 'Consumo Fora Ponta TE' else
             FATURA_DICT[10] if item == 'Energia Reativa Excedente' else
             FATURA_DICT[12] if item == 'Demanda' else
@@ -487,9 +486,9 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=True)
 
-# caminho_faturas = os.path.join(os.getcwd(), 'jupyter', 'Faturas')
+# caminho_faturas = os.path.join(os.getcwd(), 'Faturas')
 # os.listdir(caminho_faturas)
 # lista_caminhos_pdfs = [os.path.join(caminho_faturas,arq) for arq in os.listdir(caminho_faturas) if arq.endswith('.pdf')]
 # for index, item in enumerate(lista_caminhos_pdfs):
-#     print(f'{index} - {item}') 
-#     result_api = APILeitorFaturas(item).extract_document()
+#     print(f'{index} - {item}')
+#     result_api = APILeitorFaturas(item).extrair_documento()
