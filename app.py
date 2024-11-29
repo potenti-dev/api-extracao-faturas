@@ -148,7 +148,7 @@ class APILeitorFaturas:
 
         data_values = {}
         data_values = {
-            **self.get_pattern_value(tipo_fatura),
+            **self.obter_valores_padrao(tipo_fatura),
             **data_values,
             'lancamentos': result_itens_fatura['itens_fatura'],
             'encargos': result_itens_fatura['encargos'],
@@ -222,6 +222,9 @@ class APILeitorFaturas:
 
         if tipo_fatura == 'ENERGISA':
             lista_item_fatura = self.renomear_lista_energisa(lista_item_fatura)
+            if 'L ANÇAMENTOS E SERVIÇOS' in lista_item_fatura:
+                lista_item_fatura.remove('L ANÇAMENTOS E SERVIÇOS')
+
 
         max_length = max(len(lista_item_fatura), len(lista_quantidade), len(lista_valor))
         lista_item_fatura += [None] * (max_length - len(lista_item_fatura))
@@ -259,7 +262,7 @@ class APILeitorFaturas:
             'soma_total_valor': soma_total_valor
         }
 
-    def get_pattern_value(self, tipo_fatura):
+    def obter_valores_padrao(self, tipo_fatura):
         dados_dicionario = {}
         dados_texto = ''
         consumo_total = None
