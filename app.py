@@ -309,11 +309,17 @@ class APILeitorFaturas:
                 text_bandeira = self.busca_valor_pela_coordenada(CELESC_COORDENADAS_BANDEIRA_TARIFA1, 0)
                 bandeira = padrao_bandeira_celesc.findall(text_bandeira)
                 if not bandeira:
-                    text_bandeira = self.busca_valor_pela_coordenada(CELESC_COORDENADAS_BANDEIRA_TARIFA2, 0)
-                    bandeira = padrao_bandeira_celesc.findall(text_bandeira)
+                    text_bandeira1 = self.busca_valor_pela_coordenada(CELESC_COORDENADAS_BANDEIRA_TARIFA2, 0)
+                    bandeira = padrao_bandeira_celesc.findall(text_bandeira1)
+                    if not bandeira:
+                        padrao_bandeira_celesc = re.compile(r'(\w+)\s+(\d{1,2})')
+                        bandeira = padrao_bandeira_celesc.findall(text_bandeira)
+                
                 dias_bandeira = None
                 if len(bandeira) == 1 and len(bandeira[0]) == 3:
                     _, tipo_bandeira, dias_bandeira = bandeira[0]
+                if len(bandeira) == 1 and len(bandeira[0]) == 2:
+                    tipo_bandeira, dias_bandeira = bandeira[0]
                 else:
                     try:
                         tipo_bandeira = bandeira[0][1]
@@ -355,7 +361,7 @@ class APILeitorFaturas:
             new_date_str = new_date_obj.strftime(date_format)
             matches_referencia = [new_date_str]
 
-            if dias_bandeira == None:
+            if not dias_bandeira:
                 year = new_date_obj.year
                 month = new_date_obj.month
                 num_days = calendar.monthrange(year, month)[1]
