@@ -152,11 +152,11 @@ class APILeitorFaturas:
             **data_values,
             'lancamentos': result_itens_fatura['itens_fatura'],
             'encargos': result_itens_fatura['encargos'],
-            'soma_total_quantidade': result_itens_fatura['soma_total_quantidade'],
+            'soma_consumo_total': result_itens_fatura['soma_consumo_total'],
             # 'soma_total_valor': result_itens_fatura['soma_total_valor']
         }
 
-        data_values['consumo_total'] = result_itens_fatura['soma_total_valor'] if result_itens_fatura['soma_total_valor'] else data_values['consumo_total']
+        data_values['consumo_total'] = result_itens_fatura['soma_consumo_total'] if result_itens_fatura['soma_consumo_total'] else data_values['consumo_total']
 
         print(data_values)
         return {'status': 200,
@@ -209,7 +209,6 @@ class APILeitorFaturas:
             lista_quantidade = lista_quantidade + somar_quantidade
             lista_valor = lista_valor + somar_valor
 
-
         if tipo_fatura == 'CELESC1' or tipo_fatura == 'CELESC2_3':
             lista_item_fatura = [item[5:] if item.startswith('(') else item for item in lista_item_fatura]
             lista_item_fatura = self.renomear_lista_celesc(lista_item_fatura)
@@ -224,7 +223,6 @@ class APILeitorFaturas:
             lista_item_fatura = self.renomear_lista_energisa(lista_item_fatura)
             if 'L ANÇAMENTOS E SERVIÇOS' in lista_item_fatura:
                 lista_item_fatura.remove('L ANÇAMENTOS E SERVIÇOS')
-
 
         max_length = max(len(lista_item_fatura), len(lista_quantidade), len(lista_valor))
         lista_item_fatura += [None] * (max_length - len(lista_item_fatura))
@@ -245,20 +243,24 @@ class APILeitorFaturas:
             'quantidade': 'sum',
             'valor': 'sum'
         }).reset_index()
-        soma_total_quantidade = df['quantidade'].sum()
+        
+        df_consumo_total = df.drop_duplicates(subset=['item_fatura'])
+
+        filtro = df_consumo_total['item_fatura'].str.contains('Ponta|Fora Ponta|FPonta', case=False, na=False)
+        soma_consumo_total = df_consumo_total.loc[filtro, 'quantidade'].sum()
         total_keywords = ['TOTAL', 'Total a Pagar', 'Total']
-        soma_total_valor = df.loc[
-            (df['item_fatura'].isin(total_keywords)) | (df['quantidade'].isin(total_keywords)),
-            'valor'
-        ]
-        soma_total_valor = soma_total_valor.values[0] if not soma_total_valor.empty else None
+        soma_total_valor = df.loc[df['item_fatura'].isin(total_keywords)]
+
+        itens_faturas_exclusao = ['SUBTOTAL', 'TOTAL','Subtotal','Total', 'Total', 'Total Devoluções/Ajustes', 'Total a Pagar', 'Total Distribuidora', 'L ANÇAMENTOS E SERVIÇO']
+        soma_total = df_consumo_total.loc[~df['item_fatura'].isin(itens_faturas_exclusao)]['valor'].sum()
+        soma_total_valor = soma_total_valor.values[0] if not soma_total_valor.empty else soma_total if soma_total else None
 
         result_json = self.transforma_em_json(df)
 
         return {
             'itens_fatura' : result_json['itens_fatura'],
             'encargos' : result_json['encargos'],
-            'soma_total_quantidade': soma_total_quantidade,
+            'soma_consumo_total': soma_consumo_total,
             'soma_total_valor': soma_total_valor
         }
 
@@ -268,7 +270,7 @@ class APILeitorFaturas:
         consumo_total = None
         tipo_bandeira = None
         dias_bandeira = None
-        padrao_bandeira_celesc = re.compile(r'(Bandeira)\s+(.*?)\s+(\d{1,2})')
+        padrao_bandeira_celesc = re.compile(r'(Bandeira)\s+(\w+)\s+(\d{1,2})')
         padrao_bandeira_copel = re.compile(r'TARIFA HORARIA\s+(\S+)')
         padrao_bandeira_cpfl = re.compile(r'(\S+)')
         padrao_dias_bandeira_cpfl = re.compile(r'(\d+)\s+Dias')
@@ -449,13 +451,14 @@ class APILeitorFaturas:
         return lista_renomeada
         
     def transforma_em_json(self, df):
+        itens_faturas_exclusao = ['SUBTOTAL', 'TOTAL','Subtotal','Total', 'Total', 'Total Devoluções/Ajustes', 'Total a Pagar', 'Total Distribuidora', 'L ANÇAMENTOS E SERVIÇO']
         df['categoria'] = df['item_fatura'].apply(lambda x: 'itens de fatura' if x in FATURA_DICT.values() else 'encargos')
         df['encargo_valido'] = df.apply(
             lambda row: (
                 row['categoria'] == 'encargos' and 
                 pd.notnull(row['quantidade']) and 
                 pd.notnull(row['valor']) and 
-                row['item_fatura'] not in ['SUBTOTAL', 'TOTAL']
+                row['item_fatura'] not in itens_faturas_exclusao
             ), axis=1
         )
         itens_fatura = df[df['categoria'] == 'itens de fatura'][['item_fatura', 'quantidade', 'valor']]
@@ -492,12 +495,13 @@ def examina_pdf(pdf_url):
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, debug=True)
+   port = int(os.environ.get('PORT', 8080))
+   app.run(host='0.0.0.0', port=port, debug=True)
 
 # caminho_faturas = os.path.join(os.getcwd(), 'Faturas')
 # os.listdir(caminho_faturas)
 # lista_caminhos_pdfs = [os.path.join(caminho_faturas,arq) for arq in os.listdir(caminho_faturas) if arq.endswith('.pdf')]
 # for index, item in enumerate(lista_caminhos_pdfs):
+#     print('-'*50)
 #     print(f'{index} - {item}')
 #     result_api = APILeitorFaturas(item).extrair_documento()
