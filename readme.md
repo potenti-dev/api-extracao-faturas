@@ -34,7 +34,7 @@ Este projeto consiste em uma API desenvolvida em Python usando Flask para extrai
 - Python 3.8 ou superior.
 - Bibliotecas listadas em `requirements.txt`.
 
-### Instalação
+### Como rodar e funcionamento
 
 1. **Clone o repositório**:
    ```bash
@@ -43,11 +43,55 @@ Este projeto consiste em uma API desenvolvida em Python usando Flask para extrai
    pip install -r requirements.txt
    python app.py
    ```
+   
+2. **Para rodar localmente**:
+- **`Comente a linha`**:
+  ```python
+  if __name__ == '__main__':
+     port = int(os.environ.get('PORT', 8080))
+     app.run(host='0.0.0.0', port=port, debug=True
+  ```
+- **Crie uma pasta "Faturas", upe as faturas que você quer testar/rodar, e descomente a linha:**:
+  ```python
+  caminho_faturas = os.path.join(os.getcwd(), 'Faturas')
+  os.listdir(caminho_faturas)
+  lista_caminhos_pdfs = [os.path.join(caminho_faturas, arq) for arq in os.listdir(caminho_faturas) if arq.endswith('.pdf')]
+  for index, item in enumerate(lista_caminhos_pdfs):
+      print('-'*50)
+      print(f'{index} - {item}')
+      result_api = APILeitorFaturas(item).extrair_documento()
+  ```
 
-2. **Exemplo de requisição**:
+3. **Adicionando Novos Modelos de Fatura**
+  Para incluir novos fornecedores ou modelos de faturas:
+  - **Teste as coordenadas**: Use a biblioteca `pdfplumber` para abrir o PDF e verificar as coordenadas das seções desejadas (itens, valores, quantidades).
+
+  - **Adicione as coordenadas ao código**: Crie constantes seguindo o padrão existente, como:
+  ```python
+   NOVO_FORNECEDOR_COORDENADAS_ITEM_FATURA = (x1, y1, x2, y2)
+   NOVO_FORNECEDOR_COORDENADAS_QUANTIDADE = (x1, y1, x2, y2)
+   NOVO_FORNECEDOR_COORDENADAS_VALOR = (x1, y1, x2, y2)
+  ```
+  - **Implemente o processamento**:  Crie condições no método busca_itens_fatura:
+  ```python
+  if tipo_fatura == 'NOVO_FORNECEDOR':
+    cords_item_fatura = NOVO_FORNECEDOR_COORDENADAS_ITEM_FATURA
+    cords_quantidade = NOVO_FORNECEDOR_COORDENADAS_QUANTIDADE
+    cords_valor = NOVO_FORNECEDOR_COORDENADAS_VALOR
+  ```
+  - **Renomeie itens, se necessário**:  Caso os itens tenham nomes diferentes, adicione a lógica em um método de renomeação específico:
+  ```python
+  def renomear_lista_novo_fornecedor(self, lista):
+      return [
+          FATURA_DICT[1] if item == 'Item Específico' else item
+          for item in lista
+      ]
+  ```
+   
+4. **Exemplo de requisição**:
 GET http://127.0.0.1:8080/api/extract?url=https://exemplo.com/fatura.pdf
 
-3. **Exemplo de resposta**:
+5. **Exemplo de resposta**:
 ```json
 {
   "status": 200,
@@ -82,3 +126,6 @@ GET http://127.0.0.1:8080/api/extract?url=https://exemplo.com/fatura.pdf
   }
 }
 ```
+
+
+
