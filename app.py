@@ -244,10 +244,23 @@ class APILeitorFaturas:
             'valor': 'sum'
         }).reset_index()
         
-        df_consumo_total = df.drop_duplicates(subset=['item_fatura'])
+        df_consumo_total = df.copy()
+        df_consumo_total = df_consumo_total.drop_duplicates(subset=['item_fatura'])
+        df_consumo_total = df_consumo_total.drop_duplicates(subset=['quantidade'])
 
-        filtro = df_consumo_total['item_fatura'].str.contains('Ponta|Fora Ponta|FPonta', case=False, na=False)
-        soma_consumo_total = df_consumo_total.loc[filtro, 'quantidade'].sum()
+
+        itens_especificos = {1, 2, 6, 7}
+        filtro_itens_dict = df_consumo_total['item_fatura'].isin(
+            [FATURA_DICT[item] for item in itens_especificos]
+        )
+        filtro_palavras_chave  = df_consumo_total['item_fatura'].str.contains('Ponta|Fora Ponta|FPonta', case=False, na=False)
+        filtro_combinado = filtro_itens_dict & filtro_palavras_chave
+        df_consumo_total_filtrado = df_consumo_total.loc[filtro_combinado]
+        soma_consumo_total = df_consumo_total_filtrado['quantidade'].sum()
+
+        print('---SOMA TOTAL:   ')
+        print(soma_consumo_total)
+        print('-'*40)
         total_keywords = ['TOTAL', 'Total a Pagar', 'Total']
         soma_total_valor = df.loc[df['item_fatura'].isin(total_keywords)]
 
@@ -414,6 +427,8 @@ class APILeitorFaturas:
 
     def renomear_lista_cpfl(self, list):
         lista_renomeada = [
+            FATURA_DICT[6] if item == 'Cons Ponta - TE' or item == 'Cons Ponta TE' else  
+            FATURA_DICT[7] if item == 'Cons FPonta TE' or item == 'Cons Fora Ponta - TE' or item == 'Cons FPonta - TE' else
             FATURA_DICT[9] if item == 'Consumo Reativo Exc Ponta' else
             FATURA_DICT[10] if item == 'Consumo Reativo Exc Fora Ponta' else
             FATURA_DICT[12] if item == 'Demanda' else
